@@ -1,1 +1,1 @@
-# myrepo
+# myrepo CompBio REPO to be used
