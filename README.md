@@ -4,49 +4,76 @@
 # myrepo
 # When retrieving the transcriptomes, I used the SRA Toolkit which would download the SRA file in FASTQ format using fastq-dump, split the files into paired end files using --split-files
 # and put the files in its original format using --origfmt
-# I will be developing Track 2 
-
+# I will be developing Track 1 
 
 import os
+import subprocess
 import argparse
+import statistics
+from Bio import SeqIO
 
-def run_pipeline_project(input_files, output_dir):
-    # Create output directory
-    os.makedirs(output_dir, exist_ok=True)
-    os.chdir(output_dir)
+def extract_cds(input_gb_file, output_fasta_file):
+    cds_records = []
+    with open(input_gb_file, "r") as handle:
+        for record in SeqIO.parse(handle, "genbank"):
+            for feature in record.features:
+                if feature.type == "CDS":
+                    cds_records.append(feature)
 
-    # Step 2: Bowtie2 mapping
-    bowtie2_index = "NC_006273.2"  # HCMV genome accession
-    log_file = "PipelineProject.log"
+    with open(output_fasta_file, "w") as output_handle:
+        for cds in cds_records:
+            protein_id = cds.qualifiers.get('protein_id', [''])[0]
+            if protein_id:
+                output_handle.write(f">{protein_id}\n{cds.location.extract(record).seq}\n")
 
-    with open(log_file, "a") as log:
-        log.write("Bowtie2 Mapping Results:\n")
-        for file in input_files:
-            # Run Bowtie2 mapping
-            os.system(f"bowtie2 -x {bowtie2_index} -1 {file} -2 {file[:-6]}2.fastq -S {file[:-6]}.sam")
+    return len(cds_records)
 
-            # Count reads before filtering
-            with open(file, "r") as f:
-                reads_before = sum(1 for line in f) / 4
+def build_kallisto_index(input_fasta_file):
+    index_file = os.path.splitext(input_fasta_file)[0] + "_index.idx"
+    subprocess.run(["kallisto", "index", "-i", index_file, input_fasta_file], check=True, stdout=subprocess.PIPE)
+    return index_file
 
-            # Count reads after filtering
-            with open(f"{file[:-6]}2.fastq", "r") as f:
-                reads_after = sum(1 for line in f) / 4
+def quantify_tpm(sample, index_file):
+    subprocess.run(["kallisto", "quant", "-i", index_file, "-o", sample, f"{sample}_reads.fastq"], check=True, stdout=subprocess.PIPE)
 
-            # Write results to log
-            log.write(f"{file[:-6]} had {int(reads_before)} read pairs before Bowtie2 filtering "
-                      f"and {int(reads_after)} read pairs after.\n")
+def calculate_tpm_stats(sample_dir):
+    tpm_values = []
+    with open(os.path.join(sample_dir, "abundance.tsv"), "r") as f:
+        next(f)  # skip header
+        for line in f:
+            tpm_values.append(float(line.split()[4]))
+    return min(tpm_values), statistics.median(tpm_values), statistics.mean(tpm_values), max(tpm_values)
 
-    # Step 3: Assembly (not implemented in this script)
-    # Step 4: BLAST (not implemented in this script)
-    # Step 5: Generate final output files (not implemented in this script)
+def main(args):
+    input_gb_file = args.input
+    output_fasta_file = args.output
+    log_file = args.log
+    samples = args.samples
 
-    # Print summary to console
-    print("Pipeline completed successfully.")
+    # Extract CDS and write to FASTA file
+    num_cds = extract_cds(input_gb_file, output_fasta_file)
 
-parser = argparse.ArgumentParser(description="Pipeline to process transcriptome reads.")
-parser.add_argument("--input", nargs="+", help="Input FASTQ files", required=True)
-parser.add_argument("--output", help="Output directory name", required=True)
+    # Build kallisto index
+    index_file = build_kallisto_index(output_fasta_file)
+
+    # Quantify TPM for each sample
+    for sample in samples:
+        quantify_tpm(sample, index_file)
+
+    # Write log information
+    with open(log_file, "w") as log:
+        log.write("sample\tcondition\tmin_tpm\tmed_tpm\tmean_tpm\tmax_tpm\n")
+        for sample in samples:
+            min_tpm, med_tpm, mean_tpm, max_tpm = calculate_tpm_stats(os.path.join(sample, "abundance.tsv"))
+            log.write(f"{sample}\t{args.condition}\t{min_tpm}\t{med_tpm}\t{mean_tpm}\t{max_tpm}\n")
+
+parser = argparse.ArgumentParser(description="Build kallisto index for a given NCBI accession number and quantify TPM for each sample.")
+parser.add_argument("accession", type=str, help="NCBI accession number")
+parser.add_argument("--input", type=str, default="input.gb", help="Input GenBank file (default: input.gb)")
+parser.add_argument("--output", type=str, default="output.fasta", help="Output FASTA file (default: output.fasta)")
+parser.add_argument("--log", type=str, default="log.txt", help="Log file (default: log.txt)")
+parser.add_argument("--condition", type=str, default="unknown", help="Condition of the samples (default: unknown)")
+parser.add_argument("samples", nargs="+", help="List of sample names (SRR numbers)")
 args = parser.parse_args()
+main(args)
 
-run_pipeline_project(args.input, args.output)
