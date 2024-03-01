@@ -9,7 +9,6 @@ from Bio.Blast import NCBIWWW, NCBIXML
 def remove_null_bytes(input_file, output_file):
     """
     Removes null bytes from a file and writes the cleaned content to another file.
-
     Parameters:
         input_file (str): Path to the input file.
         output_file (str): Path to the output file.
@@ -23,11 +22,9 @@ def remove_null_bytes(input_file, output_file):
 def extract_cds(input_gb_file, output_fasta_file):
     """
     Extracts CDS features from a GenBank file and writes them to a FASTA file.
-
     Parameters:
         input_gb_file (str): Path to the input GenBank file.
         output_fasta_file (str): Path to the output FASTA file.
-
     Returns:
         int: Number of CDS features extracted.
     """
@@ -50,7 +47,6 @@ def extract_cds(input_gb_file, output_fasta_file):
 def run_blast(input_fasta, output_xml):
     """
     Runs BLAST search using NCBI's online service.
-
     Parameters:
         input_fasta (str): Path to the input FASTA file.
         output_xml (str): Path to the output XML file containing BLAST results.
@@ -65,7 +61,6 @@ def run_blast(input_fasta, output_xml):
 def parse_blast_results(xml_file, log_file):
     """
     Parses BLAST results from an XML file and writes them into a log file.
-
     Parameters:
         xml_file (str): Path to the input XML file containing BLAST results.
         log_file (str): Path to the output log file.
@@ -84,11 +79,9 @@ def parse_blast_results(xml_file, log_file):
 def build_kallisto_index(input_fasta_file, output_directory):
     """
     Builds a kallisto index for RNA-seq quantification.
-
     Parameters:
         input_fasta_file (str): Path to the input FASTA file.
         output_directory (str): Path to the output directory for storing the index file.
-
     Returns:
         str: Path to the generated kallisto index file.
     """
@@ -100,7 +93,6 @@ def build_kallisto_index(input_fasta_file, output_directory):
 def quantify_tpm(sample, index_file, output_directory):
     """
     Quantifies transcript abundance using kallisto.
-
     Parameters:
         sample (str): Sample name.
         index_file (str): Path to the kallisto index file.
@@ -115,10 +107,8 @@ def quantify_tpm(sample, index_file, output_directory):
 def extract_condition_from_file(sample_file):
     """
     Extracts condition information from a sample file.
-
     Parameters:
         sample_file (str): Path to the sample file.
-
     Returns:
         str: Condition information extracted from the sample file.
     """
@@ -138,11 +128,9 @@ def extract_condition_from_file(sample_file):
 def calculate_tpm_stats(sample_dir, condition):
     """
     Calculates statistics from kallisto output.
-
     Parameters:
         sample_dir (str): Path to the directory containing kallisto output for a sample.
         condition (str): Condition information associated with the sample.
-
     Returns:
         tuple: Minimum TPM, median TPM, mean TPM, and maximum TPM.
     """
@@ -161,7 +149,6 @@ def calculate_tpm_stats(sample_dir, condition):
 def run_sleuth(output_dir, sample_dir):
     """
     Runs sleuth R script for differential expression analysis.
-
     Parameters:
         output_dir (str): Path to the output directory.
         sample_dir (str): Path to the directory containing kallisto output for a sample.
