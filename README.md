@@ -1,10 +1,10 @@
 """
 @author: James Damaso, COMP 383 001
 """
-# myrepo
-# When retrieving the transcriptomes, I used the SRA Toolkit which would download the SRA file in FASTQ format using fastq-dump, split the files into paired end files using --split-files
+# When retrieving the transcriptomes, I used the SRA Toolkit which would download the SRA file in FASTQ format using fastq-dump, split the files into paired-end files using --split-files
 # and put the files in its original format using --origfmt
 # I will be developing Track 1 
+
 
 import os
 import subprocess
